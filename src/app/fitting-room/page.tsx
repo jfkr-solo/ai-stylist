@@ -29,7 +29,7 @@ const LEFT: Category[] = ["headwear", "tops", "outer"];
 const RIGHT: Category[] = ["bottoms", "shoes", "accessory"];
 
 function FittingRoom() {
-  const { profile, items, outfits, addOutfit, deleteOutfit, updateItem } = useStore();
+  const { profile, items, outfits, addOutfit, deleteOutfit, updateItem, importSamples } = useStore();
   const toast = useToast();
   const avatarUrl = profile?.avatar_full_body_url ?? null;
 
@@ -187,7 +187,11 @@ function FittingRoom() {
 
       {items.length === 0 && (
         <div className="card mb-6 p-5 text-sm">
-          まだアイテムがありません。<Link href="/closet" className="font-bold text-navy underline">クローゼット</Link>から写真を登録しましょう。
+          まだアイテムがありません。<Link href="/closet" className="font-bold text-navy underline">クローゼット</Link>から写真を登録するか、
+          <button className="ml-1 font-bold text-navy underline" onClick={async () => toast.show(`サンプルを${await importSamples()}点追加しました`)}>
+            サンプルアイテムで試す
+          </button>
+          こともできます。
         </div>
       )}
 
