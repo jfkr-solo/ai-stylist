@@ -84,16 +84,41 @@ def search_pixabay(query: str):
     } for h in r.json().get("hits", [])]
 
 
+UNSPLASH_API = "https://api.unsplash.com"
+
+
+def unsplash_get(path: str, **params):
+    """Unsplash API 呼び出し。Demo 枠（1時間50リクエスト）を使い切ったらリセットまで待つ。"""
+    while True:
+        r = requests.get(UNSPLASH_API + path, params=params, timeout=30,
+                         headers={"Authorization": f"Client-ID {os.environ['UNSPLASH_ACCESS_KEY']}", "Accept-Version": "v1"})
+        if r.status_code == 403 and r.headers.get("X-Ratelimit-Remaining") == "0":
+            print("Unsplash の1時間の上限に達したので待機します", flush=True)
+            time.sleep(3600)
+            continue
+        r.raise_for_status()
+        if r.headers.get("X-Ratelimit-Remaining") == "0":
+            print("Unsplash の上限に達しました。次の呼び出しは1時間後になります", flush=True)
+        return r
+
+
 def search_unsplash(query: str):
-    # Unsplash License: 無料・商用可・帰属表示不要（推奨）。
-    r = requests.get("https://api.unsplash.com/search/photos", params={"query": f"{query} white background", "per_page": 30},
-                     headers={"Authorization": f"Client-ID {os.environ['UNSPLASH_ACCESS_KEY']}"}, timeout=30)
-    r.raise_for_status()
+    # Unsplash License: 無料・商用可・帰属表示不要（推奨）。1アイテム=1リクエスト。
+    r = unsplash_get("/search/photos", query=query, per_page=30, content_filter="high")
     return [{
-        "title": p.get("alt_description") or f"Unsplash {p['id']}", "page": p["links"]["html"], "url": p["urls"]["regular"],
+        "title": p.get("alt_description") or f"Unsplash {p['id']}", "page": p["links"]["html"],
+        "url": p["urls"]["raw"] + "&w=1200&fm=jpg&q=85",
         "license": "Unsplash License", "license_url": "https://unsplash.com/license",
         "artist": p.get("user", {}).get("name", ""),
+        "download_location": p["links"]["download_location"],
     } for p in r.json().get("results", [])]
+
+
+def unsplash_track_download(meta: dict):
+    """Unsplash の API ガイドライン: 実際に使う写真はダウンロードを通知する（1枚=1リクエスト）。"""
+    loc = meta.get("download_location")
+    if loc and os.environ.get("UNSPLASH_ACCESS_KEY"):
+        unsplash_get(loc.replace(UNSPLASH_API, ""))
 
 
 def search_pexels(query: str):
@@ -172,6 +197,7 @@ def cut():
     OUT.mkdir(parents=True, exist_ok=True)
     for slug, idx in picks.items():
         src = Image.open(CAND / slug / f"{idx:02d}.jpg")
+        unsplash_track_download(json.loads((CAND / slug / "meta.json").read_text())[idx])
         cutout = remove(src, session=session, post_process_mask=True)
         bbox = cutout.getchannel("A").point(lambda a: 255 if a > 8 else 0).getbbox()
         if bbox:
