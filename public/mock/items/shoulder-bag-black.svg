@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="142 132 182 266"><defs><filter id="s" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".28"/></filter></defs>
+  <g filter="url(#s)">
+    <path d="M152 142 L282 342" stroke="#1a1a1a" stroke-width="6" stroke-linecap="round"/>
+    <rect x="252" y="336" width="64" height="54" rx="9" fill="#1d1d1f"/>
+    <path d="M252 346 Q252 336 262 336 H306 Q316 336 316 346 V364 H252Z" fill="#2a2a2d"/>
+    <rect x="279" y="358" width="10" height="8" rx="2" fill="#b9b9b9"/>
+  </g>
+</svg>

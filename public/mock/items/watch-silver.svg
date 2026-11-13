@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="278 362 36 36"><defs><filter id="s" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".28"/></filter></defs>
+  <g filter="url(#s)">
+    <rect x="282" y="372" width="28" height="15" rx="3" fill="#a7adb5"/>
+    <circle cx="296" cy="379.5" r="10" fill="#d9dde2" stroke="#8d939b" stroke-width="2"/>
+    <circle cx="296" cy="379.5" r="7" fill="#1e2433"/>
+    <path d="M296 379.5 V374.5 M296 379.5 L299.5 381" stroke="#e8e8e8" stroke-width="1.3" stroke-linecap="round"/>
+  </g>
+</svg>

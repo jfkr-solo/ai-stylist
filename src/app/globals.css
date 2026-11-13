@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f6f4f0;
+  --color-ink: #1b1e25;
+  --color-navy: #1f2a44;
+  --color-gold: #b08d57;
+  --color-mist: #e9e6e0;
+  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition active:scale-[.97] disabled:opacity-50 disabled:pointer-events-none;
+}
+@utility btn-primary {
+  @apply btn bg-navy text-white shadow-sm hover:bg-[#162036];
+}
+@utility btn-gold {
+  @apply btn bg-gradient-to-r from-[#b08d57] to-[#caa86e] text-white shadow-md hover:brightness-105;
+}
+@utility btn-ghost {
+  @apply btn border border-black/10 bg-white text-ink hover:bg-mist/60;
+}
+@utility chip {
+  @apply inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition select-none;
+}
+@utility chip-off {
+  @apply chip border-black/10 bg-white text-ink/70 hover:border-black/25;
+}
+@utility chip-on {
+  @apply chip border-navy bg-navy text-white;
+}
+@utility card {
+  @apply rounded-3xl border border-black/5 bg-white shadow-[0_2px_20px_-8px_rgba(0,0,0,.12)];
+}
+@utility label {
+  @apply mb-2 block text-xs font-bold tracking-wider text-ink/50;
+}
+@utility input {
+  @apply w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-navy focus:ring-2 focus:ring-navy/10;
+}
+@utility checker {
+  background-color: #f3f1ed;
+  background-image: linear-gradient(45deg, #ebe8e2 25%, transparent 25%), linear-gradient(-45deg, #ebe8e2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ebe8e2 75%), linear-gradient(-45deg, transparent 75%, #ebe8e2 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+@keyframes pop { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: none; } }
+.animate-pop { animation: pop .28s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes layer-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.animate-layer { animation: layer-in .25s ease-out both; }
