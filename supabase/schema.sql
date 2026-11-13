@@ -1,5 +1,6 @@
 -- =============================================================
 -- プロAIスタイリスト : Supabase スキーマ定義
+-- 他アプリと同じプロジェクトに同居できるよう、テーブル・型・バケット名に stylist 接頭辞を付けている。
 -- Next.js (App Router) + Supabase + Tailwind CSS
 -- =============================================================
 
@@ -9,9 +10,10 @@
 create extension if not exists "pgcrypto";
 
 -- updated_at 自動更新用
-create or replace function public.set_updated_at()
+create or replace function public.stylist_set_updated_at()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   new.updated_at = now();
@@ -23,7 +25,7 @@ $$;
 -- 1. 列挙型（カテゴリなど）
 -- -------------------------------------------------------------
 do $$ begin
-  create type public.item_category as enum (
+  create type public.stylist_item_category as enum (
     'tops',       -- トップス
     'bottoms',    -- ボトムス
     'outer',      -- アウター
@@ -34,7 +36,7 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type public.trend_level as enum (
+  create type public.stylist_trend_level as enum (
     'classic',    -- 定番重視
     'balanced',   -- ほどよくトレンド
     'trendy'      -- トレンド強め
@@ -44,7 +46,7 @@ exception when duplicate_object then null; end $$;
 -- -------------------------------------------------------------
 -- 2. profiles : ユーザープロファイル ＆ 全身写真
 -- -------------------------------------------------------------
-create table if not exists public.profiles (
+create table if not exists public.stylist_profiles (
   id                    uuid primary key default gen_random_uuid(),
   user_id               uuid not null unique references auth.users(id) on delete cascade,
   display_name          text,
@@ -57,20 +59,20 @@ create table if not exists public.profiles (
   updated_at            timestamptz not null default now()
 );
 
-drop trigger if exists trg_profiles_updated_at on public.profiles;
-create trigger trg_profiles_updated_at
-  before update on public.profiles
-  for each row execute function public.set_updated_at();
+drop trigger if exists trg_stylist_profiles_updated_at on public.stylist_profiles;
+create trigger trg_stylist_profiles_updated_at
+  before update on public.stylist_profiles
+  for each row execute function public.stylist_set_updated_at();
 
 -- -------------------------------------------------------------
 -- 3. items : 自分のアイテム（透過画像＋属性タグ）
 -- -------------------------------------------------------------
-create table if not exists public.items (
+create table if not exists public.stylist_items (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null references auth.users(id) on delete cascade,
   name           text not null,                    -- 例: 'ネイビー無地Tシャツ'
   image_url      text not null,                    -- 透過（切り抜き済）画像
-  category       public.item_category not null,
+  category       public.stylist_item_category not null,
   sub_category   text,                             -- 例: 'cap' / 'knit_hat' / 'bag' / 'watch'
   scene_tags     text[] not null default '{}',     -- 利用シーン 例: {'休日','街歩き'}
   color          text,                             -- メインカラー 例: 'navy'
@@ -82,105 +84,93 @@ create table if not exists public.items (
   updated_at     timestamptz not null default now()
 );
 
-create index if not exists idx_items_user_category on public.items (user_id, category);
-create index if not exists idx_items_scene_tags  on public.items using gin (scene_tags);
-create index if not exists idx_items_style_tags  on public.items using gin (style_tags);
+create index if not exists idx_stylist_items_user_category on public.stylist_items (user_id, category);
+create index if not exists idx_stylist_items_scene_tags  on public.stylist_items using gin (scene_tags);
+create index if not exists idx_stylist_items_style_tags  on public.stylist_items using gin (style_tags);
 
-drop trigger if exists trg_items_updated_at on public.items;
-create trigger trg_items_updated_at
-  before update on public.items
-  for each row execute function public.set_updated_at();
+drop trigger if exists trg_stylist_items_updated_at on public.stylist_items;
+create trigger trg_stylist_items_updated_at
+  before update on public.stylist_items
+  for each row execute function public.stylist_set_updated_at();
 
 -- -------------------------------------------------------------
 -- 4. outfits : コーディネート（手動保存 / AI提案）
 -- -------------------------------------------------------------
-create table if not exists public.outfits (
+create table if not exists public.stylist_outfits (
   id                  uuid primary key default gen_random_uuid(),
   user_id             uuid not null references auth.users(id) on delete cascade,
   date                date not null default current_date,
   title               text,                       -- 例: '週末の街歩きコーデ'
-  top_item_id         uuid references public.items(id) on delete set null,
-  bottom_item_id      uuid references public.items(id) on delete set null,
-  outer_item_id       uuid references public.items(id) on delete set null,
-  shoes_item_id       uuid references public.items(id) on delete set null,
-  headwear_item_id    uuid references public.items(id) on delete set null,
-  accessory_item_id   uuid references public.items(id) on delete set null,
+  top_item_id         uuid references public.stylist_items(id) on delete set null,
+  bottom_item_id      uuid references public.stylist_items(id) on delete set null,
+  outer_item_id       uuid references public.stylist_items(id) on delete set null,
+  shoes_item_id       uuid references public.stylist_items(id) on delete set null,
+  headwear_item_id    uuid references public.stylist_items(id) on delete set null,
+  accessory_item_id   uuid references public.stylist_items(id) on delete set null,
   weather             text,                       -- 'sunny' / 'cloudy' / 'rainy' / 'snowy'
   temperature         smallint,                   -- ℃
   scene               text,                       -- 例: '休日'
   style               text,                       -- 例: 'きれいめカジュアル'
   color_base          text,                       -- 例: 'navy'
-  trend_level         public.trend_level default 'balanced',
+  trend_level         public.stylist_trend_level default 'balanced',
   source              text not null default 'manual' check (source in ('manual', 'ai')),
   ai_comment          text,                       -- AIスタイリストのコメント「こういう合わせ方はどう？」
   tryon_image_url     text,                       -- 外部AI試着APIの合成結果（将来用）
   created_at          timestamptz not null default now()
 );
 
-create index if not exists idx_outfits_user_date on public.outfits (user_id, date desc);
+create index if not exists idx_stylist_outfits_user_date on public.stylist_outfits (user_id, date desc);
 
 -- -------------------------------------------------------------
 -- 5. Row Level Security（本人のデータのみ読み書き可）
 -- -------------------------------------------------------------
-alter table public.profiles enable row level security;
-alter table public.items    enable row level security;
-alter table public.outfits  enable row level security;
+alter table public.stylist_profiles enable row level security;
+alter table public.stylist_items    enable row level security;
+alter table public.stylist_outfits  enable row level security;
 
-create policy "profiles_owner_all" on public.profiles
+-- 新しいSupabaseプロジェクトでは、SQLで作った表に自動で権限が付かないため明示的に付与する
+grant select, insert, update, delete on public.stylist_profiles, public.stylist_items, public.stylist_outfits to authenticated;
+
+create policy "stylist_profiles_owner_all" on public.stylist_profiles
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-create policy "items_owner_all" on public.items
+create policy "stylist_items_owner_all" on public.stylist_items
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-create policy "outfits_owner_all" on public.outfits
+create policy "stylist_outfits_owner_all" on public.stylist_outfits
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- -------------------------------------------------------------
--- 6. サインアップ時に profiles を自動作成
+-- 6. プロファイル行の作成
+--    同じSupabaseプロジェクトに他アプリが同居しても衝突しないよう、
+--    auth.users へのトリガーは使わず、アプリ側（repo.getProfile）で初回アクセス時に作成する。
 -- -------------------------------------------------------------
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  insert into public.profiles (user_id, display_name)
-  values (new.id, coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)))
-  on conflict (user_id) do nothing;
-  return new;
-end;
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
 
 -- -------------------------------------------------------------
 -- 7. Storage バケット（全身写真 / アイテム画像）
 --    パス規約: {user_id}/{ファイル名}
 -- -------------------------------------------------------------
 insert into storage.buckets (id, name, public)
-values ('avatars', 'avatars', true), ('items', 'items', true)
+values ('stylist-avatars', 'stylist-avatars', true), ('stylist-items', 'stylist-items', true)
 on conflict (id) do nothing;
 
-create policy "storage_public_read" on storage.objects
-  for select using (bucket_id in ('avatars', 'items'));
+create policy "stylist_storage_public_read" on storage.objects
+  for select using (bucket_id in ('stylist-avatars', 'stylist-items'));
 
-create policy "storage_owner_insert" on storage.objects
+create policy "stylist_storage_owner_insert" on storage.objects
   for insert with check (
-    bucket_id in ('avatars', 'items')
+    bucket_id in ('stylist-avatars', 'stylist-items')
     and auth.uid()::text = (storage.foldername(name))[1]
   );
 
-create policy "storage_owner_update" on storage.objects
+create policy "stylist_storage_owner_update" on storage.objects
   for update using (
-    bucket_id in ('avatars', 'items')
+    bucket_id in ('stylist-avatars', 'stylist-items')
     and auth.uid()::text = (storage.foldername(name))[1]
   );
 
-create policy "storage_owner_delete" on storage.objects
+create policy "stylist_storage_owner_delete" on storage.objects
   for delete using (
-    bucket_id in ('avatars', 'items')
+    bucket_id in ('stylist-avatars', 'stylist-items')
     and auth.uid()::text = (storage.foldername(name))[1]
   );
