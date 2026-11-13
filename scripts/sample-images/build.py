@@ -1,7 +1,7 @@
 """サンプルアイテム画像（実物写真 → 背景透過PNG）を作るスクリプト。
 
 使い方（ネットワークで commons.wikimedia.org / upload.wikimedia.org、Pexels を使う場合は api.pexels.com / images.pexels.com に届く環境で）:
-  環境変数 PEXELS_API_KEY があれば Pexels、なければ Wikimedia Commons から候補を集める。
+  環境変数 PIXABAY_API_KEY / UNSPLASH_ACCESS_KEY / PEXELS_API_KEY のどれかがあればそのサイト、なければ Wikimedia Commons から候補を集める。
   Commons は User-Agent に連絡先がないと 429 になりやすい。ゆっくり取得すること。
   pip install "rembg[cpu]" pillow requests
   python -I build.py fetch            # catalog.json の各アイテムについて候補写真を cand/<slug>/ に集め、contact sheet を作る
@@ -60,8 +60,40 @@ def license_ok(name: str) -> bool:
 
 
 def search(query: str):
-    """PEXELS_API_KEY があれば Pexels（商品写真が豊富）、なければ Wikimedia Commons を検索する。"""
-    return search_pexels(query) if os.environ.get("PEXELS_API_KEY") else search_commons(query)
+    """キーがある写真サイトを優先して検索する（Pixabay → Unsplash → Pexels → Wikimedia Commons）。"""
+    if os.environ.get("PIXABAY_API_KEY"):
+        return search_pixabay(query)
+    if os.environ.get("UNSPLASH_ACCESS_KEY"):
+        return search_unsplash(query)
+    if os.environ.get("PEXELS_API_KEY"):
+        return search_pexels(query)
+    return search_commons(query)
+
+
+def search_pixabay(query: str):
+    # Pixabay Content License: 無料・商用可・帰属表示不要。画像はダウンロードして同梱する（直リンク不可）。
+    r = requests.get("https://pixabay.com/api/", params={
+        "key": os.environ["PIXABAY_API_KEY"], "q": f"{query} white background"[:100], "image_type": "photo",
+        "safesearch": "true", "per_page": 30, "order": "popular",
+    }, timeout=30)
+    r.raise_for_status()
+    return [{
+        "title": h.get("tags") or f"Pixabay {h['id']}", "page": h["pageURL"], "url": h["largeImageURL"],
+        "license": "Pixabay Content License", "license_url": "https://pixabay.com/service/license-summary/",
+        "artist": h.get("user", ""),
+    } for h in r.json().get("hits", [])]
+
+
+def search_unsplash(query: str):
+    # Unsplash License: 無料・商用可・帰属表示不要（推奨）。
+    r = requests.get("https://api.unsplash.com/search/photos", params={"query": f"{query} white background", "per_page": 30},
+                     headers={"Authorization": f"Client-ID {os.environ['UNSPLASH_ACCESS_KEY']}"}, timeout=30)
+    r.raise_for_status()
+    return [{
+        "title": p.get("alt_description") or f"Unsplash {p['id']}", "page": p["links"]["html"], "url": p["urls"]["regular"],
+        "license": "Unsplash License", "license_url": "https://unsplash.com/license",
+        "artist": p.get("user", {}).get("name", ""),
+    } for p in r.json().get("results", [])]
 
 
 def search_pexels(query: str):
