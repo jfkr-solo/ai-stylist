@@ -129,20 +129,24 @@ function unwrap<T>(res: { data: T | null; error: { message: string } | null }): 
   return res.data as T;
 }
 
+// 同じSupabaseプロジェクトに他アプリが同居しても衝突しないよう、接頭辞付きの名前を使う（supabase/schema.sql と対応）
+const T = { profiles: "stylist_profiles", items: "stylist_items", outfits: "stylist_outfits" } as const;
+const BUCKETS = { avatars: "stylist-avatars", items: "stylist-items" } as const;
+
 export const supabaseRepo: Repo = {
   mode: "supabase",
   async getProfile() {
     const sb = getSupabaseBrowserClient();
     const user_id = await currentUserId();
-    const existing = unwrap(await sb.from("profiles").select("*").eq("user_id", user_id).maybeSingle());
+    const existing = unwrap(await sb.from(T.profiles).select("*").eq("user_id", user_id).maybeSingle());
     if (existing) return existing as Profile;
-    return unwrap(await sb.from("profiles").insert({ user_id }).select().single()) as Profile;
+    return unwrap(await sb.from(T.profiles).insert({ user_id }).select().single()) as Profile;
   },
   async saveProfile(patch) {
     const sb = getSupabaseBrowserClient();
     const user_id = await currentUserId();
     const { id: _id, user_id: _u, created_at: _c, ...rest } = patch;
-    return unwrap(await sb.from("profiles").update(rest).eq("user_id", user_id).select().single()) as Profile;
+    return unwrap(await sb.from(T.profiles).update(rest).eq("user_id", user_id).select().single()) as Profile;
   },
   async uploadImage(bucket, dataUrl) {
     const sb = getSupabaseBrowserClient();
@@ -150,40 +154,40 @@ export const supabaseRepo: Repo = {
     const blob = await dataUrlToBlob(dataUrl);
     const ext = blob.type.split("/")[1] ?? "png";
     const path = `${user_id}/${uid()}.${ext}`;
-    const { error } = await sb.storage.from(bucket).upload(path, blob, { contentType: blob.type });
+    const { error } = await sb.storage.from(BUCKETS[bucket]).upload(path, blob, { contentType: blob.type });
     if (error) throw new Error(error.message);
-    return sb.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+    return sb.storage.from(BUCKETS[bucket]).getPublicUrl(path).data.publicUrl;
   },
   async listItems() {
     const sb = getSupabaseBrowserClient();
     await currentUserId();
-    return unwrap(await sb.from("items").select("*").order("created_at", { ascending: false })) as Item[];
+    return unwrap(await sb.from(T.items).select("*").order("created_at", { ascending: false })) as Item[];
   },
   async addItem(item) {
     const sb = getSupabaseBrowserClient();
     const user_id = await currentUserId();
-    return unwrap(await sb.from("items").insert({ ...item, user_id }).select().single()) as Item;
+    return unwrap(await sb.from(T.items).insert({ ...item, user_id }).select().single()) as Item;
   },
   async updateItem(id, patch) {
     const sb = getSupabaseBrowserClient();
-    return unwrap(await sb.from("items").update(patch).eq("id", id).select().single()) as Item;
+    return unwrap(await sb.from(T.items).update(patch).eq("id", id).select().single()) as Item;
   },
   async deleteItem(id) {
-    const { error } = await getSupabaseBrowserClient().from("items").delete().eq("id", id);
+    const { error } = await getSupabaseBrowserClient().from(T.items).delete().eq("id", id);
     if (error) throw new Error(error.message);
   },
   async listOutfits() {
     const sb = getSupabaseBrowserClient();
     await currentUserId();
-    return unwrap(await sb.from("outfits").select("*").order("created_at", { ascending: false })) as Outfit[];
+    return unwrap(await sb.from(T.outfits).select("*").order("created_at", { ascending: false })) as Outfit[];
   },
   async addOutfit(outfit) {
     const sb = getSupabaseBrowserClient();
     const user_id = await currentUserId();
-    return unwrap(await sb.from("outfits").insert({ ...outfit, user_id }).select().single()) as Outfit;
+    return unwrap(await sb.from(T.outfits).insert({ ...outfit, user_id }).select().single()) as Outfit;
   },
   async deleteOutfit(id) {
-    const { error } = await getSupabaseBrowserClient().from("outfits").delete().eq("id", id);
+    const { error } = await getSupabaseBrowserClient().from(T.outfits).delete().eq("id", id);
     if (error) throw new Error(error.message);
   },
 };

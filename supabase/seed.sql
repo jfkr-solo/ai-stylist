@@ -29,7 +29,7 @@ values (
 ) on conflict do nothing;
 
 -- プロファイル（トリガーで作成済みなら更新）
-insert into public.profiles (user_id, display_name, generation, base_style, gender_preference, avatar_full_body_url, height_cm)
+insert into public.stylist_profiles (user_id, display_name, generation, base_style, gender_preference, avatar_full_body_url, height_cm)
 values (
   '00000000-0000-0000-0000-000000000001',
   'デモ', '50代', 'きれいめカジュアル', 'mens',
@@ -43,7 +43,7 @@ on conflict (user_id) do update set
   height_cm            = excluded.height_cm;
 
 -- アイテム（透過済み風モック画像）
-insert into public.items (id, user_id, name, image_url, category, sub_category, scene_tags, color, style_tags, season_tags, overlay) values
+insert into public.stylist_items (id, user_id, name, image_url, category, sub_category, scene_tags, color, style_tags, season_tags, overlay) values
   -- トップス
   ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001',
    'ネイビー無地Tシャツ（上質コットン）', '/mock/items/tee-navy.svg', 'tops', 'tshirt',
@@ -86,7 +86,7 @@ insert into public.items (id, user_id, name, image_url, category, sub_category, 
 on conflict (id) do nothing;
 
 -- サンプルコーデ（手動 / AI提案 各1件）
-insert into public.outfits (
+insert into public.stylist_outfits (
   user_id, date, title, top_item_id, bottom_item_id, outer_item_id, shoes_item_id,
   headwear_item_id, accessory_item_id, weather, temperature, scene, style, color_base,
   trend_level, source, ai_comment
