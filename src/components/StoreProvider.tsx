@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Item, NewItem, NewOutfit, Outfit, Profile } from "@/types/database";
 import { NotSignedInError, repo, resetDemoData } from "@/lib/repo";
+import { MOCK_ITEMS, MOCK_PROFILE } from "@/lib/mock-data";
 
 interface StoreValue {
   mode: "demo" | "supabase";
@@ -21,6 +22,7 @@ interface StoreValue {
   addOutfit(outfit: NewOutfit): Promise<void>;
   deleteOutfit(id: string): Promise<void>;
   resetDemo(): Promise<void>;
+  importSamples(): Promise<number>;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -88,6 +90,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       async deleteOutfit(id) {
         await repo.deleteOutfit(id);
         setOutfits((prev) => prev.filter((o) => o.id !== id));
+      },
+      async importSamples() {
+        // ログインユーザーのクローゼットにモックアイテムを複製（同名アイテムはスキップ）
+        const existing = new Set(items.map((i) => i.name));
+        const created: Item[] = [];
+        for (const { id: _id, user_id: _u, created_at: _c, ...rest } of MOCK_ITEMS) {
+          if (existing.has(rest.name)) continue;
+          created.push(await repo.addItem(rest));
+        }
+        setItems((prev) => [...created, ...prev]);
+        if (!profile?.avatar_full_body_url) {
+          setProfile(
+            await repo.saveProfile({
+              avatar_full_body_url: MOCK_PROFILE.avatar_full_body_url,
+              generation: profile?.generation ?? MOCK_PROFILE.generation,
+              base_style: profile?.base_style ?? MOCK_PROFILE.base_style,
+            }),
+          );
+        }
+        return created.length;
       },
       async resetDemo() {
         resetDemoData();

@@ -21,7 +21,8 @@ export default function ClosetPage() {
 }
 
 function ClosetContent() {
-  const { items, addItem, updateItem, deleteItem, uploadImage } = useStore();
+  const { items, addItem, updateItem, deleteItem, uploadImage, importSamples } = useStore();
+  const [importing, setImporting] = useState(false);
   const toast = useToast();
   const [tab, setTab] = useState<Category | "all">("all");
   const [scene, setScene] = useState<string | null>(null);
@@ -74,7 +75,27 @@ function ClosetContent() {
         <div className="card grid place-items-center gap-3 p-12 text-center text-sm text-ink/50">
           <span className="text-4xl">👔</span>
           条件に合うアイテムがありません
-          <button className="btn-ghost" onClick={() => setAdding(true)}>写真から登録する</button>
+          <div className="flex flex-wrap justify-center gap-2">
+            <button className="btn-ghost" onClick={() => setAdding(true)}>写真から登録する</button>
+            {items.length === 0 && (
+              <button
+                className="btn-primary"
+                disabled={importing}
+                onClick={async () => {
+                  setImporting(true);
+                  try {
+                    toast.show(`サンプルアイテムを${await importSamples()}点追加しました`);
+                  } catch (e) {
+                    toast.show((e as Error).message);
+                  } finally {
+                    setImporting(false);
+                  }
+                }}
+              >
+                {importing ? "取り込み中…" : "サンプルアイテムで試す"}
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-5">
