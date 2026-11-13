@@ -127,11 +127,11 @@
   "query": "white dress shirt product"
  },
  {
-  "slug": "sweat-navy",
-  "name": "ネイビースウェット",
+  "slug": "sweat-white",
+  "name": "白のスウェット",
   "category": "tops",
   "sub_category": "sweatshirt",
-  "color": "navy",
+  "color": "white",
   "scene_tags": [
    "休日",
    "ジム帰り",
@@ -146,14 +146,14 @@
    "winter",
    "spring"
   ],
-  "query": "navy crewneck sweatshirt"
+  "query": "blank sweatshirt mockup"
  },
  {
-  "slug": "knit-crew-charcoal",
-  "name": "チャコールのクルーネックニット",
+  "slug": "knit-crew-navy",
+  "name": "ネイビーのクルーネックニット",
   "category": "tops",
   "sub_category": "knit",
-  "color": "charcoal",
+  "color": "navy",
   "scene_tags": [
    "オフィスカジュアル",
    "会食",
@@ -167,34 +167,35 @@
    "autumn",
    "winter"
   ],
-  "query": "charcoal grey crew neck sweater"
+  "query": "grey wool sweater folded"
  },
  {
-  "slug": "knit-turtle-black",
-  "name": "黒のタートルネックニット",
+  "slug": "polo-gray",
+  "name": "グレーの鹿の子ポロシャツ",
   "category": "tops",
-  "sub_category": "knit",
-  "color": "black",
+  "sub_category": "polo",
+  "color": "gray",
   "scene_tags": [
-   "会食",
-   "街歩き"
+   "休日",
+   "オフィスカジュアル",
+   "旅行"
   ],
   "style_tags": [
-   "ミニマル",
-   "モード"
+   "きれいめ",
+   "ベーシック"
   ],
   "season_tags": [
-   "autumn",
-   "winter"
+   "spring",
+   "summer"
   ],
-  "query": "black turtleneck sweater"
+  "query": "grey polo shirt"
  },
  {
-  "slug": "henley-olive",
-  "name": "オリーブのヘンリーネック長袖",
+  "slug": "henley-blue",
+  "name": "ブルーのヘンリーネック長袖",
   "category": "tops",
   "sub_category": "longsleeve",
-  "color": "olive",
+  "color": "blue",
   "scene_tags": [
    "休日",
    "アウトドア"
@@ -207,7 +208,7 @@
    "spring",
    "autumn"
   ],
-  "query": "olive henley long sleeve shirt"
+  "query": "henley shirt"
  },
  {
   "slug": "denim-dark",
@@ -336,7 +337,7 @@
    "summer",
    "autumn"
   ],
-  "query": "navy chinos product"
+  "query": "navy pants"
  },
  {
   "slug": "chino-olive",
@@ -438,7 +439,7 @@
    "spring",
    "autumn"
   ],
-  "query": "navy blazer product"
+  "query": "navy blazer man"
  },
  {
   "slug": "jacket-gray",
@@ -461,11 +462,11 @@
   "query": "grey wool blazer"
  },
  {
-  "slug": "coat-chester-charcoal",
-  "name": "チャコールのチェスターコート",
+  "slug": "coat-chester-gray",
+  "name": "ライトグレーのチェスターコート",
   "category": "outer",
   "sub_category": "coat",
-  "color": "charcoal",
+  "color": "gray",
   "scene_tags": [
    "オフィスカジュアル",
    "会食",
@@ -478,7 +479,7 @@
   "season_tags": [
    "winter"
   ],
-  "query": "charcoal overcoat men"
+  "query": "grey overcoat men"
  },
  {
   "slug": "trench-beige",
@@ -498,14 +499,14 @@
    "spring",
    "autumn"
   ],
-  "query": "beige trench coat"
+  "query": "beige trench coat man"
  },
  {
-  "slug": "down-navy",
-  "name": "ネイビーのダウンジャケット",
+  "slug": "down-white",
+  "name": "白のダウンジャケット",
   "category": "outer",
   "sub_category": "down",
-  "color": "navy",
+  "color": "white",
   "scene_tags": [
    "休日",
    "アウトドア",
@@ -518,7 +519,7 @@
   "season_tags": [
    "winter"
   ],
-  "query": "navy down jacket product"
+  "query": "puffer jacket hanging"
  },
  {
   "slug": "denim-jacket",
@@ -538,7 +539,7 @@
    "spring",
    "autumn"
   ],
-  "query": "denim jacket product"
+  "query": "denim jacket hanging"
  },
  {
   "slug": "blouson-black",
@@ -561,11 +562,11 @@
   "query": "black harrington jacket"
  },
  {
-  "slug": "cardigan-navy",
-  "name": "ネイビーのニットカーディガン",
+  "slug": "cardigan-black",
+  "name": "黒のニットカーディガン",
   "category": "outer",
   "sub_category": "cardigan",
-  "color": "navy",
+  "color": "black",
   "scene_tags": [
    "オフィスカジュアル",
    "休日"
@@ -578,7 +579,7 @@
    "spring",
    "autumn"
   ],
-  "query": "navy cardigan sweater"
+  "query": "cardigan hanging"
  },
  {
   "slug": "field-jacket-olive",
@@ -598,7 +599,7 @@
    "spring",
    "autumn"
   ],
-  "query": "olive field jacket M-65"
+  "query": "olive military jacket"
  },
  {
   "slug": "shirt-jacket-brown",
@@ -684,11 +685,11 @@
   "query": "grey suede running shoes"
  },
  {
-  "slug": "loafer-black",
-  "name": "黒のコインローファー",
+  "slug": "loafer-beige-suede",
+  "name": "ベージュスエードのビットローファー",
   "category": "shoes",
   "sub_category": "loafer",
-  "color": "black",
+  "color": "beige",
   "scene_tags": [
    "オフィスカジュアル",
    "会食"
@@ -726,11 +727,11 @@
   "query": "brown leather loafers"
  },
  {
-  "slug": "chukka-brown-suede",
-  "name": "ブラウンスエードのチャッカブーツ",
+  "slug": "chukka-charcoal-suede",
+  "name": "チャコールスエードのチャッカブーツ",
   "category": "shoes",
   "sub_category": "boots",
-  "color": "brown",
+  "color": "charcoal",
   "scene_tags": [
    "休日",
    "街歩き"
@@ -743,7 +744,7 @@
    "autumn",
    "winter"
   ],
-  "query": "brown suede chukka boots"
+  "query": "suede chukka boots"
  },
  {
   "slug": "chelsea-black",
@@ -808,11 +809,11 @@
   "query": "navy canvas sneakers"
  },
  {
-  "slug": "trail-gray",
-  "name": "グレーのトレイルシューズ",
+  "slug": "trail-black",
+  "name": "黒のトレイルシューズ",
   "category": "shoes",
   "sub_category": "sneakers",
-  "color": "gray",
+  "color": "black",
   "scene_tags": [
    "アウトドア",
    "旅行"
@@ -826,7 +827,7 @@
    "autumn",
    "winter"
   ],
-  "query": "grey trail running shoes"
+  "query": "trail running shoes"
  },
  {
   "slug": "cap-navy",
@@ -928,7 +929,7 @@
    "autumn",
    "winter"
   ],
-  "query": "navy beanie"
+  "query": "blue beanie"
  },
  {
   "slug": "beanie-black",
@@ -989,11 +990,11 @@
   "query": "panama hat"
  },
  {
-  "slug": "fedora-gray",
-  "name": "グレーの中折れハット",
+  "slug": "fedora-camel",
+  "name": "キャメルの中折れハット",
   "category": "headwear",
   "sub_category": "hat",
-  "color": "gray",
+  "color": "brown",
   "scene_tags": [
    "街歩き",
    "会食"
@@ -1006,7 +1007,7 @@
    "autumn",
    "winter"
   ],
-  "query": "grey fedora hat"
+  "query": "fedora hat"
  },
  {
   "slug": "hunting-cap-brown",
@@ -1029,10 +1030,10 @@
  },
  {
   "slug": "watch-silver",
-  "name": "シルバーの腕時計",
+  "name": "白文字盤のクロノグラフ腕時計（メタルバンド）",
   "category": "accessory",
   "sub_category": "watch",
-  "color": "silver",
+  "color": "black",
   "scene_tags": [
    "オフィスカジュアル",
    "会食",
@@ -1048,14 +1049,14 @@
    "autumn",
    "winter"
   ],
-  "query": "stainless steel wristwatch"
+  "query": "silver wristwatch"
  },
  {
   "slug": "watch-leather-brown",
-  "name": "ブラウン革ベルトの腕時計",
+  "name": "黒文字盤の革ベルト腕時計",
   "category": "accessory",
   "sub_category": "watch",
-  "color": "brown",
+  "color": "black",
   "scene_tags": [
    "オフィスカジュアル",
    "会食"
@@ -1070,7 +1071,7 @@
    "autumn",
    "winter"
   ],
-  "query": "wristwatch leather strap"
+  "query": "leather strap watch"
  },
  {
   "slug": "shoulder-bag-black",
@@ -1096,11 +1097,11 @@
   "query": "black shoulder bag"
  },
  {
-  "slug": "tote-navy",
-  "name": "ネイビーのトートバッグ",
+  "slug": "tote-natural",
+  "name": "生成りのキャンバストート",
   "category": "accessory",
   "sub_category": "bag",
-  "color": "navy",
+  "color": "beige",
   "scene_tags": [
    "休日",
    "旅行"
@@ -1136,7 +1137,7 @@
    "autumn",
    "winter"
   ],
-  "query": "black leather briefcase"
+  "query": "leather briefcase"
  },
  {
   "slug": "backpack-black",

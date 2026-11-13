@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="128 728 144 58"><defs><filter id="s" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".28"/></filter></defs>
-  <g filter="url(#s)">
-    <path d="M154 740 Q170 732 194 736 Q200 750 200 768 H136 Q134 752 154 740Z" fill="#141414"/>
-    <path d="M246 740 Q230 732 206 736 Q200 750 200 768 H264 Q266 752 246 740Z" fill="#141414"/>
-    <path d="M134 766 H200 V778 Q168 784 132 778Z M266 766 H200 V778 Q232 784 268 778Z" fill="#f2f2f0"/>
-    <path d="M168 744 l16 2 M166 750 l18 2 M232 744 l-16 2 M234 750 l-18 2" stroke="#3a3a3a" stroke-width="2"/>
-  </g>
-</svg>
