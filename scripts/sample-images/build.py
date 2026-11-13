@@ -1,6 +1,8 @@
 """サンプルアイテム画像（実物写真 → 背景透過PNG）を作るスクリプト。
 
-使い方（ネットワークで commons.wikimedia.org / upload.wikimedia.org に届く環境で）:
+使い方（ネットワークで commons.wikimedia.org / upload.wikimedia.org、Pexels を使う場合は api.pexels.com / images.pexels.com に届く環境で）:
+  環境変数 PEXELS_API_KEY があれば Pexels、なければ Wikimedia Commons から候補を集める。
+  Commons は User-Agent に連絡先がないと 429 になりやすい。ゆっくり取得すること。
   pip install "rembg[cpu]" pillow requests
   python -I build.py fetch            # catalog.json の各アイテムについて候補写真を cand/<slug>/ に集め、contact sheet を作る
   # cand/_sheets/<slug>.jpg を目で見て、使う候補番号を picks.json に書く  {"tee-navy": 3, ...}
@@ -13,7 +15,9 @@
 
 import io
 import json
+import os
 import sys
+import time
 from pathlib import Path
 
 import requests
@@ -24,10 +28,24 @@ ROOT = HERE.parent.parent
 CAND = HERE / "cand"
 OUT = ROOT / "public" / "mock" / "items"
 API = "https://commons.wikimedia.org/w/api.php"
-UA = {"User-Agent": "ai-stylist-sample-builder/0.1"}
+UA = {"User-Agent": "sample-image-builder/0.1 (python-requests)"}
 OK_LICENSES = ("cc0", "public domain", "pd", "cc by", "cc-by")  # CC BY-SA も "cc by" で拾う。NC/ND は除外
 N_CAND = 12
 MAX_SIDE = 900
+
+
+def get(url, **kw):
+    """429/5xx のときは待って再試行する（Wikimedia のレート制限対策）。"""
+    for attempt in range(6):
+        r = requests.get(url, headers=UA, timeout=60, **kw)
+        if r.status_code == 429 or r.status_code >= 500:
+            time.sleep(float(r.headers.get("retry-after") or 2 ** attempt * 3))
+            continue
+        r.raise_for_status()
+        time.sleep(0.5)
+        return r
+    r.raise_for_status()
+    return r
 
 
 def catalog():
@@ -42,12 +60,32 @@ def license_ok(name: str) -> bool:
 
 
 def search(query: str):
+    """PEXELS_API_KEY があれば Pexels（商品写真が豊富）、なければ Wikimedia Commons を検索する。"""
+    return search_pexels(query) if os.environ.get("PEXELS_API_KEY") else search_commons(query)
+
+
+def search_pexels(query: str):
+    # Pexels ライセンス: 無料・商用可・帰属表示不要（任意）。CREDITS.md には撮影者を記載する。
+    r = requests.get(
+        "https://api.pexels.com/v1/search",
+        params={"query": f"{query} white background", "per_page": 30, "orientation": "square"},
+        headers={"Authorization": os.environ["PEXELS_API_KEY"]}, timeout=30,
+    )
+    r.raise_for_status()
+    return [{
+        "title": p.get("alt") or f"Pexels {p['id']}", "page": p["url"], "url": p["src"]["large2x"],
+        "license": "Pexels License", "license_url": "https://www.pexels.com/license/",
+        "artist": p.get("photographer", ""),
+    } for p in r.json().get("photos", [])]
+
+
+def search_commons(query: str):
     params = {
         "action": "query", "format": "json", "generator": "search", "gsrnamespace": 6,
         "gsrsearch": f"{query} filetype:bitmap", "gsrlimit": 50,
         "prop": "imageinfo", "iiprop": "url|size|extmetadata", "iiurlwidth": 1200,
     }
-    pages = requests.get(API, params=params, headers=UA, timeout=30).json().get("query", {}).get("pages", {})
+    pages = get(API, params=params).json().get("query", {}).get("pages", {})
     out = []
     for p in sorted(pages.values(), key=lambda p: p.get("index", 0)):
         ii = (p.get("imageinfo") or [{}])[0]
@@ -65,14 +103,17 @@ def search(query: str):
 
 def fetch():
     (CAND / "_sheets").mkdir(parents=True, exist_ok=True)
+    only = set(sys.argv[2:])
     for item in catalog():
+        if only and item["slug"] not in only:
+            continue
         d = CAND / item["slug"]
         d.mkdir(exist_ok=True)
         found = search(item["query"])[:N_CAND]
         thumbs = []
         for i, c in enumerate(found):
             try:
-                img = Image.open(io.BytesIO(requests.get(c["url"], headers=UA, timeout=60).content)).convert("RGB")
+                img = Image.open(io.BytesIO(get(c["url"]).content)).convert("RGB")
             except Exception as e:  # noqa: BLE001
                 print("skip", c["title"], e)
                 continue
