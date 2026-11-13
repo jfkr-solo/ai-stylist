@@ -27,11 +27,20 @@ export default function LoginPage() {
     setBusy(true);
     setMsg(null);
     const sb = getSupabaseBrowserClient();
-    const { error } =
-      mode === "signin" ? await sb.auth.signInWithPassword({ email, password }) : await sb.auth.signUp({ email, password });
-    setBusy(false);
-    if (error) return setMsg(error.message);
-    if (mode === "signup") setMsg("確認メールを送りました（ローカル環境では即ログインできます）");
+    if (mode === "signup") {
+      const { data, error } = await sb.auth.signUp({ email, password });
+      setBusy(false);
+      if (error) return setMsg(toJapanese(error.message));
+      // Supabase の「Confirm email」がオンだとセッションは返らず、確認メールのリンクを踏むまでログインできない
+      if (!data.session) {
+        setMode("signin");
+        return setMsg("確認メールを送りました。メール内のリンクを開いてから、ログインしてください。");
+      }
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      setBusy(false);
+      if (error) return setMsg(toJapanese(error.message));
+    }
     await reload();
     router.push("/fitting-room");
   }
@@ -51,4 +60,12 @@ export default function LoginPage() {
       <p className="text-center text-[11px] text-ink/40">ローカルの seed では demo@example.com / demo-password でログインできます</p>
     </form>
   );
+}
+
+function toJapanese(message: string): string {
+  if (/email not confirmed/i.test(message)) return "メールアドレスの確認がまだです。確認メールのリンクを開いてからログインしてください。";
+  if (/invalid login credentials/i.test(message)) return "メールアドレスかパスワードが違います（新規登録がまだの場合は「アカウントを作成する」から登録してください）。";
+  if (/already registered/i.test(message)) return "このメールアドレスは登録済みです。ログインしてください。";
+  if (/rate limit/i.test(message)) return "確認メールの送信回数の上限に達しました。しばらく待ってから再度お試しください。";
+  return message;
 }
