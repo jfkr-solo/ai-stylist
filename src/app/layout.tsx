@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "手持ちの服を登録して、自分の全身写真で着せ替え。AIスタイリストがコーデを提案します。",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#f6f4f0" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#f6f4f0" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -203,13 +203,23 @@ export function ItemForm({
 
       {error && <p className="rounded-xl bg-red-50 px-4 py-2 text-xs text-red-700">{error}</p>}
 
-      <div className="flex items-center justify-between gap-3 border-t border-black/5 pt-4">
+      <div className="sticky -bottom-5 -mx-5 flex items-center justify-between gap-3 border-t border-black/5 bg-paper px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4 md:static md:mx-0 md:px-0 md:pb-0">
         {onDelete ? (
           <button
             type="button"
-            className="text-xs font-semibold text-red-600 hover:underline"
+            className="min-h-11 rounded-full px-4 text-sm font-semibold text-red-600 hover:bg-red-50 active:bg-red-100 disabled:opacity-50"
+            disabled={busy}
             onClick={async () => {
-              if (confirm("このアイテムを削除しますか？")) await onDelete();
+              if (!confirm("このアイテムを削除しますか？")) return;
+              setBusy(true);
+              setError(null);
+              try {
+                await onDelete();
+              } catch (e) {
+                setError(`削除できませんでした: ${e instanceof Error ? e.message : String(e)}`);
+              } finally {
+                setBusy(false);
+              }
             }}
           >
             削除する
