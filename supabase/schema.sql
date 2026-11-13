@@ -128,6 +128,9 @@ alter table public.stylist_profiles enable row level security;
 alter table public.stylist_items    enable row level security;
 alter table public.stylist_outfits  enable row level security;
 
+-- 新しいSupabaseプロジェクトでは、SQLで作った表に自動で権限が付かないため明示的に付与する
+grant select, insert, update, delete on public.stylist_profiles, public.stylist_items, public.stylist_outfits to authenticated;
+
 create policy "stylist_profiles_owner_all" on public.stylist_profiles
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
