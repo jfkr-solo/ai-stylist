@@ -17,12 +17,14 @@ const ALLOWED_MIME = ["image/png", "image/jpeg", "image/webp", "image/heic", "im
 
 /**
  * AI試着（バーチャル Try-On）。
- * GEMINI_API_KEY が設定されていれば Google Gemini の画像生成で着せ替え画像を作り、data URL で返す。
+ * GOOGLE_CLOUD_API_KEY（Vertex AI）か GEMINI_API_KEY（AI Studio）が設定されていれば Google Gemini の画像生成で着せ替え画像を作り、data URL で返す。
  * 未設定なら status: "mock" を返し、フロントは透過画像のレイヤー合成をそのまま表示する。
  */
 export async function POST(req: Request) {
   const body = (await req.json()) as TryOnRequest;
-  const apiKey = process.env.GEMINI_API_KEY || process.env.TRYON_API_KEY;
+  // Vertex AI（Google Cloud）のキーがあれば優先。無料トライアルのクレジットはこちらでしか使えない
+  const vertexKey = process.env.GOOGLE_CLOUD_API_KEY;
+  const apiKey = vertexKey || process.env.GEMINI_API_KEY || process.env.TRYON_API_KEY;
 
   if (!body.person_image_url || !Array.isArray(body.garments) || body.garments.length === 0) {
     return NextResponse.json({ status: "error", message: "全身写真とアイテムを選んでください。", image_url: null }, { status: 400 });
@@ -33,7 +35,7 @@ export async function POST(req: Request) {
       status: "mock",
       image_url: null,
       message:
-        "AI試着はまだ設定されていないため、透過画像のレイヤー合成でプレビューしています。環境変数 GEMINI_API_KEY を設定すると、シワや影まで自然に合成された画像に置き換わります。",
+        "AI試着はまだ設定されていないため、透過画像のレイヤー合成でプレビューしています。環境変数 GOOGLE_CLOUD_API_KEY（または GEMINI_API_KEY）を設定すると、シワや影まで自然に合成された画像に置き換わります。",
     });
   }
 
@@ -55,7 +57,13 @@ export async function POST(req: Request) {
     const garments = await Promise.all(
       body.garments.slice(0, 6).map(async (g) => ({ category: g.category, image: await loadImage(g.image_url, origin) })),
     );
-    const result = await generateTryOnWithGemini({ apiKey, model: process.env.TRYON_MODEL, person, garments });
+    const result = await generateTryOnWithGemini({
+      apiKey,
+      backend: vertexKey ? "vertex" : "ai-studio",
+      model: process.env.TRYON_MODEL,
+      person,
+      garments,
+    });
     return NextResponse.json({
       status: "ok",
       image_url: `data:${result.mimeType};base64,${result.data}`,

@@ -48,8 +48,16 @@ export class TryOnError extends Error {
   }
 }
 
+/**
+ * backend:
+ *  - "ai-studio": Gemini API（Google AI Studio で発行したキー。前払い制）
+ *  - "vertex": Google Cloud の Vertex AI（Cloud のAPIキー。無料トライアルの$300クレジットが使える）
+ */
+export type GeminiBackend = "ai-studio" | "vertex";
+
 export async function generateTryOnWithGemini(opts: {
   apiKey: string;
+  backend?: GeminiBackend;
   model?: string;
   person: InlineImage;
   garments: TryOnGarment[];
@@ -61,7 +69,11 @@ export async function generateTryOnWithGemini(opts: {
     ...opts.garments.map((g) => ({ inline_data: { mime_type: g.image.mimeType, data: g.image.data } })),
   ];
 
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+  const endpoint =
+    opts.backend === "vertex"
+      ? `https://aiplatform.googleapis.com/v1/publishers/google/models/${encodeURIComponent(model)}:generateContent`
+      : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": opts.apiKey },
     body: JSON.stringify({
@@ -74,8 +86,8 @@ export async function generateTryOnWithGemini(opts: {
   if (!res.ok) {
     const msg = json?.error?.message ?? `HTTP ${res.status}`;
     console.error("[tryon/gemini]", res.status, msg);
-    if (res.status === 400 && /API key/i.test(msg)) throw new TryOnError("Gemini のAPIキーが正しくありません。設定を確認してください。");
-    if (res.status === 403) throw new TryOnError("Gemini のAPIキーに権限がありません（請求先アカウントの設定を確認してください）。");
+    if (/API key/i.test(msg) && (res.status === 400 || res.status === 401)) throw new TryOnError("AI試着のAPIキーが正しくありません。設定を確認してください。");
+    if (res.status === 403) throw new TryOnError("AI試着のAPIキーに権限がありません（APIの有効化と請求先アカウントの設定を確認してください）。");
     if (res.status === 429) throw new TryOnError("AI試着の利用上限に達しました。しばらく待ってからお試しください。", 429);
     throw new TryOnError("AI試着の生成に失敗しました。時間をおいてもう一度お試しください。");
   }
