@@ -43,6 +43,6 @@ src/types/         database.ts
 
 ## 今後の拡張ポイント
 
-- `src/app/api/tryon/route.ts`：Pixelcut / Google Virtual Try-On などの API 呼び出しを実装（`TRYON_API_KEY`）
+- `src/app/api/tryon/route.ts`：Google Gemini の画像生成でAI試着（`GEMINI_API_KEY`、実装は `src/lib/tryon/gemini.ts`）
 - `src/app/api/suggest/route.ts`：ルールベースの提案を LLM に置き換え（レスポンス形式はそのまま）
 - `src/lib/image.ts`：簡易背景除去を remove.bg 等の切り抜き API に置き換え

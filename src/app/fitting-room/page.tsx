@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { CATEGORIES, CATEGORY_LABEL } from "@/lib/constants";
 import { getOverlay } from "@/lib/overlay";
+import { shrinkDataUrl } from "@/lib/image";
 import type { StylistConditions, Suggestion } from "@/lib/stylist";
 import { OUTFIT_COLUMN, type Category, type Item, type Outfit, type Overlay, type Selection } from "@/types/database";
 
@@ -140,18 +141,20 @@ function FittingRoom() {
   }
 
   async function runAiTryOn() {
+    if (!avatarUrl) return;
     setTryOn({ status: "loading" });
     try {
+      const [person, ...garmentUrls] = await Promise.all([shrinkDataUrl(avatarUrl), ...selectedItems.map((i) => shrinkDataUrl(i.image_url, 768))]);
       const res = await fetch("/api/tryon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          person_image_url: avatarUrl,
-          garments: selectedItems.map((i) => ({ category: i.category, image_url: i.image_url })),
+          person_image_url: person,
+          garments: selectedItems.map((i, n) => ({ category: i.category, image_url: garmentUrls[n] })),
         }),
       });
       const data = (await res.json()) as { status: string; message: string; image_url: string | null };
-      await new Promise((r) => setTimeout(r, 1400));
+      if (data.status === "mock") await new Promise((r) => setTimeout(r, 800));
       setTryOn({ status: "done", message: data.message, imageUrl: data.image_url });
     } catch {
       setTryOn({ status: "done", message: "AI試着APIに接続できませんでした。" });
@@ -361,6 +364,8 @@ function FittingRoom() {
                 <div className="text-center text-xs font-semibold text-navy">
                   <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-2 border-navy/20 border-t-navy" />
                   服のシワや影を合成しています…
+                  <br />
+                  <span className="font-normal text-ink/50">（10〜30秒ほどかかります）</span>
                 </div>
               </div>
             )}

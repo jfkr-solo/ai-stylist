@@ -1,58 +1,123 @@
 import { NextResponse } from "next/server";
+import { generateTryOnWithGemini, TryOnError, type GeminiTarget, type InlineImage } from "@/lib/tryon/gemini";
+import { getAccessToken, parseServiceAccount } from "@/lib/tryon/google-auth";
+import { isSupabaseConfigured, SUPABASE_URL } from "@/lib/supabase/config";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { Category } from "@/types/database";
+
+// 画像生成は10〜30秒ほどかかるため、Vercel の関数の上限を延ばす
+export const maxDuration = 60;
 
 interface TryOnRequest {
   person_image_url: string | null;
-  garments: { category: string; image_url: string }[];
+  garments: { category: Category; image_url: string }[];
 }
 
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const ALLOWED_MIME = ["image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"];
+
 /**
- * AI試着（バーチャルTry-On）合成 API のプレースホルダー。
- *
- * 外部サービス例：
- *  - Pixelcut Try-On API
- *  - Google Cloud Vertex AI Virtual Try-On
- *
- * 連携時の流れ（想定）：
- *  1. person_image_url（全身写真）と garments（透過アイテム画像）を外部APIへ送信
- *  2. 返ってきた合成画像を Supabase Storage に保存
- *  3. outfits.tryon_image_url に URL を保存し、ここで image_url として返す
- *
- * 注意：データURL（デモモードの画像）は外部APIに送れないため、Supabase Storage の公開URLが必要。
+ * AI試着（バーチャル Try-On）。
+ * GOOGLE_CLOUD_CREDENTIALS（Vertex AI のサービスアカウント鍵）・GOOGLE_CLOUD_API_KEY・GEMINI_API_KEY（AI Studio）の
+ * いずれかが設定されていれば Google Gemini の画像生成で着せ替え画像を作り、data URL で返す。
+ * 未設定なら status: "mock" を返し、フロントは透過画像のレイヤー合成をそのまま表示する。
  */
 export async function POST(req: Request) {
   const body = (await req.json()) as TryOnRequest;
-  const provider = process.env.TRYON_PROVIDER;
-  const apiKey = process.env.TRYON_API_KEY;
+  // Google Cloud（Vertex AI）の設定を優先。無料トライアルの$300クレジットはこちらでしか使えない
+  const saJson = process.env.GOOGLE_CLOUD_CREDENTIALS;
+  const vertexKey = process.env.GOOGLE_CLOUD_API_KEY;
+  const studioKey = process.env.GEMINI_API_KEY || process.env.TRYON_API_KEY;
+  const configured = Boolean(saJson || vertexKey || studioKey);
 
-  if (!body.person_image_url || body.garments.length === 0) {
+  if (!body.person_image_url || !Array.isArray(body.garments) || body.garments.length === 0) {
     return NextResponse.json({ status: "error", message: "全身写真とアイテムを選んでください。", image_url: null }, { status: 400 });
   }
 
-  if (!apiKey) {
+  if (!configured) {
     return NextResponse.json({
       status: "mock",
-      provider: provider ?? null,
       image_url: null,
       message:
-        "外部のAI試着APIは未接続のため、透過画像のレイヤー合成でプレビューしています。.env.local に TRYON_API_KEY を設定し、app/api/tryon/route.ts の連携処理を実装すると、シワや影まで自然に合成された画像に置き換わります。",
+        "AI試着はまだ設定されていないため、透過画像のレイヤー合成でプレビューしています。環境変数 GOOGLE_CLOUD_CREDENTIALS を設定すると、シワや影まで自然に合成された画像に置き換わります。",
     });
   }
 
-  // --- ここに外部API連携を実装 ---------------------------------------
-  // 例（擬似コード）:
-  // const res = await fetch("https://api.example-tryon.com/v1/try-on", {
-  //   method: "POST",
-  //   headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-  //   body: JSON.stringify({ person_image: body.person_image_url, garment_images: body.garments.map((g) => g.image_url) }),
-  // });
-  // const { result_url } = await res.json();
-  // return NextResponse.json({ status: "ok", image_url: result_url, message: "AIで合成しました。" });
-  // ------------------------------------------------------------------
+  // 本番（Supabase 接続時）はログイン中のユーザーだけが使える（APIの利用料金を守るため）
+  if (isSupabaseConfigured) {
+    const supabase = await createSupabaseServerClient();
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      return NextResponse.json({ status: "error", message: "AI試着を使うにはログインしてください。", image_url: null }, { status: 401 });
+    }
+  }
 
-  return NextResponse.json({
-    status: "not_implemented",
-    provider,
-    image_url: null,
-    message: `${provider ?? "外部"} のAPIキーは設定されていますが、連携処理が未実装です（app/api/tryon/route.ts）。`,
-  });
+  try {
+    const origin = new URL(req.url).origin;
+    if (/\.svg($|\?)|^data:image\/svg/i.test(body.person_image_url)) {
+      throw new TryOnError("AI試着には自分の全身写真が必要です。プロフィールから写真を登録してください。", 400);
+    }
+    const person = await loadImage(body.person_image_url, origin);
+    const garments = await Promise.all(
+      body.garments.slice(0, 6).map(async (g) => ({ category: g.category, image: await loadImage(g.image_url, origin) })),
+    );
+    const target = await resolveTarget(saJson, vertexKey, studioKey);
+    const result = await generateTryOnWithGemini({
+      target,
+      model: process.env.TRYON_MODEL,
+      person,
+      garments,
+    });
+    return NextResponse.json({
+      status: "ok",
+      image_url: `data:${result.mimeType};base64,${result.data}`,
+      message: "AIで合成しました。実際の着用感とは異なる場合があります。",
+    });
+  } catch (e) {
+    const status = e instanceof TryOnError ? e.status : 500;
+    const message = e instanceof TryOnError ? e.message : "AI試着の生成に失敗しました。";
+    if (!(e instanceof TryOnError)) console.error("[tryon]", e);
+    return NextResponse.json({ status: "error", image_url: null, message }, { status });
+  }
+}
+
+async function resolveTarget(saJson?: string, vertexKey?: string, studioKey?: string): Promise<GeminiTarget> {
+  if (saJson) {
+    let sa;
+    try {
+      sa = parseServiceAccount(saJson);
+      return {
+        kind: "vertex-sa",
+        projectId: process.env.GOOGLE_CLOUD_PROJECT || sa.project_id,
+        location: process.env.GOOGLE_CLOUD_LOCATION || "global",
+        accessToken: await getAccessToken(sa),
+      };
+    } catch (e) {
+      throw new TryOnError(e instanceof Error ? e.message : "Google Cloud の認証に失敗しました。");
+    }
+  }
+  if (vertexKey) return { kind: "vertex-key", apiKey: vertexKey };
+  return { kind: "ai-studio", apiKey: studioKey! };
+}
+
+/** data URL・アプリ内の画像（/mock/...）・Supabase Storage の画像を base64 にする。それ以外のURLは取りに行かない。 */
+async function loadImage(url: string, origin: string): Promise<InlineImage> {
+  const m = /^data:([^;,]+);base64,(.+)$/.exec(url);
+  if (m) {
+    if (!ALLOWED_MIME.includes(m[1])) throw new TryOnError("対応していない画像形式です。", 400);
+    return { mimeType: m[1], data: m[2] };
+  }
+
+  const resolved = new URL(url, origin);
+  const allowedHosts = [new URL(origin).host];
+  if (SUPABASE_URL) allowedHosts.push(new URL(SUPABASE_URL).host);
+  if (!allowedHosts.includes(resolved.host)) throw new TryOnError("この画像は読み込めません。", 400);
+
+  const res = await fetch(resolved);
+  if (!res.ok) throw new TryOnError("画像を読み込めませんでした。", 400);
+  const mimeType = (res.headers.get("content-type") ?? "").split(";")[0].trim();
+  if (!ALLOWED_MIME.includes(mimeType)) throw new TryOnError("対応していない画像形式です。", 400);
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.byteLength > MAX_IMAGE_BYTES) throw new TryOnError("画像が大きすぎます。", 400);
+  return { mimeType, data: buf.toString("base64") };
 }

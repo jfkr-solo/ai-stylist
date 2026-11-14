@@ -99,3 +99,25 @@ export function canvasToDataUrl(canvas: HTMLCanvasElement, transparent: boolean)
 export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   return (await fetch(dataUrl)).blob();
 }
+
+/**
+ * data URL の画像を最大辺 maxSize に縮小して返す（AI試着APIへ送るサイズを抑えるため）。
+ * data URL 以外（/mock/... や Supabase の URL）はサーバー側で読むのでそのまま返す。
+ */
+export async function shrinkDataUrl(url: string, maxSize = 1024): Promise<string> {
+  if (!url.startsWith("data:")) return url;
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error("画像を読み込めませんでした"));
+    i.src = url;
+  });
+  const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+  if (scale === 1 && url.length < 1_500_000) return url;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+  // WebP 非対応のブラウザ（古い Safari）は PNG になる。どちらも透過を保てる
+  return canvas.toDataURL("image/webp", 0.9);
+}
