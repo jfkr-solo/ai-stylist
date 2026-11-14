@@ -31,7 +31,7 @@ export interface Repo {
 /* デモモード：localStorage に保存（初回はモックデータ）                */
 /* ------------------------------------------------------------------ */
 
-const KEY = "ai-stylist:demo:v1";
+const KEY = "ai-stylist:demo:v2";
 interface DemoState {
   profile: Profile;
   items: Item[];

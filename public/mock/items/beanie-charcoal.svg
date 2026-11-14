@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="152 22 96 62"><defs><filter id="s" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".28"/></filter></defs>
-  <g filter="url(#s)">
-    <path d="M160 70 Q158 28 200 28 Q242 28 240 70 Z" fill="#45484e"/>
-    <rect x="156" y="60" width="88" height="20" rx="6" fill="#3a3d42"/>
-    <path d="M164 62 v16 M172 62 v16 M180 62 v16 M188 62 v16 M196 62 v16 M204 62 v16 M212 62 v16 M220 62 v16 M228 62 v16 M236 62 v16" stroke="#2f3236" stroke-width="2"/>
-    <path d="M182 36 Q178 48 178 60 M218 36 Q222 48 222 60 M200 30 V60" stroke="#3a3d42" stroke-width="2" fill="none"/>
-  </g>
-</svg>

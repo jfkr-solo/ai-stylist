@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="86 126 228 248"><defs><filter id="s" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".28"/></filter></defs>
-  <g filter="url(#s)">
-    <path d="M126 140 Q200 126 274 140 L314 200 L290 224 L270 208 L268 368 Q200 374 132 368 L130 208 L110 224 L86 200 Z" fill="#8b9097"/>
-    <path d="M178 134 Q200 160 222 134" fill="none" stroke="#9da2a9" stroke-width="6"/>
-    <path d="M110 222 L130 206 M290 222 L270 206" stroke="#9da2a9" stroke-width="3"/>
-    <path d="M150 150 Q160 260 150 360 M250 150 Q240 260 250 360" stroke="#fff" stroke-opacity=".06" stroke-width="10" fill="none"/>
-    <path d="M200 160 V366" stroke="#000" stroke-opacity=".06" stroke-width="18"/>
-  </g>
-</svg>

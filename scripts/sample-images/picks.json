@@ -1,0 +1,219 @@
+{
+ "tee-navy": {
+  "i": 12,
+  "seg": "upper"
+ },
+ "tee-white": 2,
+ "tee-gray": {
+  "i": 13,
+  "seg": "upper"
+ },
+ "polo-navy": {
+  "i": 14,
+  "seg": "upper"
+ },
+ "oxford-shirt-blue": {
+  "i": 19,
+  "seg": "upper",
+  "fill": true
+ },
+ "shirt-white": {
+  "i": 5,
+  "seg": "upper"
+ },
+ "sweat-white": {
+  "i": 0,
+  "crop": [
+   0.12,
+   0,
+   0.92,
+   1
+  ]
+ },
+ "knit-crew-navy": {
+  "i": 19,
+  "crop": [
+   0,
+   0.12,
+   1,
+   1
+  ]
+ },
+ "polo-gray": {
+  "i": 7,
+  "from": "tee-gray",
+  "seg": "upper"
+ },
+ "henley-blue": {
+  "i": 9,
+  "seg": "upper"
+ },
+ "denim-dark": {
+  "i": 12,
+  "from": "tee-navy",
+  "seg": "lower"
+ },
+ "denim-black": {
+  "i": 18,
+  "from": "_src-black-turtleneck",
+  "seg": "lower"
+ },
+ "slacks-charcoal": {
+  "i": 5,
+  "seg": "lower"
+ },
+ "slacks-navy": {
+  "i": 9,
+  "seg": "lower"
+ },
+ "chino-beige": {
+  "i": 9,
+  "seg": "lower"
+ },
+ "chino-navy": 0,
+ "chino-olive": {
+  "i": 5,
+  "seg": "lower"
+ },
+ "cargo-khaki": {
+  "i": 12,
+  "seg": "lower"
+ },
+ "easy-pants-black": {
+  "i": 15,
+  "seg": "lower"
+ },
+ "shorts-navy": {
+  "i": 9,
+  "seg": "lower"
+ },
+ "jacket-navy": {
+  "i": 0,
+  "seg": "upper",
+  "fill": true
+ },
+ "jacket-gray": {
+  "i": 0,
+  "seg": "upper",
+  "fill": true
+ },
+ "coat-chester-gray": {
+  "i": 12,
+  "seg": "upper+full",
+  "fill": true
+ },
+ "trench-beige": {
+  "i": 7,
+  "seg": "upper+full"
+ },
+ "down-white": {
+  "i": 0,
+  "crop": [
+   0.25,
+   0.12,
+   0.75,
+   0.9
+  ]
+ },
+ "denim-jacket": {
+  "i": 0,
+  "crop": [
+   0,
+   0.1,
+   1,
+   1
+  ]
+ },
+ "blouson-black": {
+  "i": 17,
+  "seg": "upper"
+ },
+ "cardigan-black": {
+  "i": 7,
+  "crop": [
+   0,
+   0.12,
+   1,
+   1
+  ]
+ },
+ "field-jacket-olive": 2,
+ "shirt-jacket-brown": {
+  "i": 2,
+  "seg": "upper",
+  "fill": true
+ },
+ "sneakers-black": {
+  "i": 0,
+  "crop": [
+   0,
+   0.3,
+   1,
+   1
+  ]
+ },
+ "sneakers-white": 1,
+ "sneakers-gray-suede": 5,
+ "loafer-beige-suede": {
+  "i": 14,
+  "from": "loafer-brown"
+ },
+ "loafer-brown": 1,
+ "chukka-charcoal-suede": 0,
+ "chelsea-black": 0,
+ "derby-black": 1,
+ "canvas-navy": 2,
+ "trail-black": 17,
+ "cap-navy": {
+  "i": 0,
+  "crop": [
+   0,
+   0,
+   1,
+   0.75
+  ]
+ },
+ "cap-black": 0,
+ "cap-beige": 0,
+ "beanie-charcoal": 14,
+ "beanie-navy": {
+  "i": 19,
+  "crop": [
+   0.3,
+   0,
+   0.8,
+   0.36
+  ]
+ },
+ "beanie-black": 0,
+ "bucket-olive": 6,
+ "panama-hat": {
+  "i": 1,
+  "crop": [
+   0,
+   0,
+   1,
+   0.57
+  ]
+ },
+ "fedora-camel": 2,
+ "hunting-cap-brown": {
+  "i": 3,
+  "crop": [
+   0,
+   0,
+   1,
+   0.4
+  ]
+ },
+ "watch-silver": 4,
+ "watch-leather-brown": 11,
+ "shoulder-bag-black": 4,
+ "tote-natural": 0,
+ "briefcase-black": 9,
+ "backpack-black": 0,
+ "sunglasses-black": 5,
+ "glasses-tortoise": 0,
+ "belt-brown": 0,
+ "scarf-gray": 2
+}
