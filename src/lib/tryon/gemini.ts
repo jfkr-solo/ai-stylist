@@ -49,15 +49,36 @@ export class TryOnError extends Error {
 }
 
 /**
- * backend:
- *  - "ai-studio": Gemini API（Google AI Studio で発行したキー。前払い制）
- *  - "vertex": Google Cloud の Vertex AI（Cloud のAPIキー。無料トライアルの$300クレジットが使える）
+ * 接続先:
+ *  - "vertex-sa": Google Cloud の Vertex AI（サービスアカウント鍵）。無料トライアルの$300クレジットが使える
+ *  - "vertex-key": Vertex AI（Google Cloud のAPIキー）
+ *  - "ai-studio": Gemini API（Google AI Studio のキー。画像生成は前払い制）
  */
-export type GeminiBackend = "ai-studio" | "vertex";
+export type GeminiTarget =
+  | { kind: "vertex-sa"; projectId: string; accessToken: string; location?: string }
+  | { kind: "vertex-key"; apiKey: string }
+  | { kind: "ai-studio"; apiKey: string };
+
+function endpointFor(target: GeminiTarget, model: string): { url: string; headers: Record<string, string> } {
+  const m = encodeURIComponent(model);
+  switch (target.kind) {
+    case "vertex-sa": {
+      const loc = target.location ?? "global";
+      const host = loc === "global" ? "aiplatform.googleapis.com" : `${loc}-aiplatform.googleapis.com`;
+      return {
+        url: `https://${host}/v1/projects/${encodeURIComponent(target.projectId)}/locations/${loc}/publishers/google/models/${m}:generateContent`,
+        headers: { Authorization: `Bearer ${target.accessToken}` },
+      };
+    }
+    case "vertex-key":
+      return { url: `https://aiplatform.googleapis.com/v1/publishers/google/models/${m}:generateContent`, headers: { "x-goog-api-key": target.apiKey } };
+    case "ai-studio":
+      return { url: `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, headers: { "x-goog-api-key": target.apiKey } };
+  }
+}
 
 export async function generateTryOnWithGemini(opts: {
-  apiKey: string;
-  backend?: GeminiBackend;
+  target: GeminiTarget;
   model?: string;
   person: InlineImage;
   garments: TryOnGarment[];
@@ -69,13 +90,10 @@ export async function generateTryOnWithGemini(opts: {
     ...opts.garments.map((g) => ({ inline_data: { mime_type: g.image.mimeType, data: g.image.data } })),
   ];
 
-  const endpoint =
-    opts.backend === "vertex"
-      ? `https://aiplatform.googleapis.com/v1/publishers/google/models/${encodeURIComponent(model)}:generateContent`
-      : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-  const res = await fetch(endpoint, {
+  const { url, headers } = endpointFor(opts.target, model);
+  const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": opts.apiKey },
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify({
       contents: [{ role: "user", parts }],
       generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: "9:16" } },
@@ -87,7 +105,8 @@ export async function generateTryOnWithGemini(opts: {
     const msg = json?.error?.message ?? `HTTP ${res.status}`;
     console.error("[tryon/gemini]", res.status, msg);
     if (/API key/i.test(msg) && (res.status === 400 || res.status === 401)) throw new TryOnError("AI試着のAPIキーが正しくありません。設定を確認してください。");
-    if (res.status === 403) throw new TryOnError("AI試着のAPIキーに権限がありません（APIの有効化と請求先アカウントの設定を確認してください）。");
+    if (res.status === 403) throw new TryOnError("AI試着の権限がありません（Vertex AI API の有効化、ロール、請求先アカウントを確認してください）。");
+    if (res.status === 404) throw new TryOnError("AI試着のモデルが見つかりません（TRYON_MODEL の値を確認してください）。");
     if (res.status === 429) throw new TryOnError("AI試着の利用上限に達しました。しばらく待ってからお試しください。", 429);
     throw new TryOnError("AI試着の生成に失敗しました。時間をおいてもう一度お試しください。");
   }

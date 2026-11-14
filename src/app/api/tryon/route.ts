@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { generateTryOnWithGemini, TryOnError, type InlineImage } from "@/lib/tryon/gemini";
+import { generateTryOnWithGemini, TryOnError, type GeminiTarget, type InlineImage } from "@/lib/tryon/gemini";
+import { getAccessToken, parseServiceAccount } from "@/lib/tryon/google-auth";
 import { isSupabaseConfigured, SUPABASE_URL } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Category } from "@/types/database";
@@ -17,25 +18,28 @@ const ALLOWED_MIME = ["image/png", "image/jpeg", "image/webp", "image/heic", "im
 
 /**
  * AI試着（バーチャル Try-On）。
- * GOOGLE_CLOUD_API_KEY（Vertex AI）か GEMINI_API_KEY（AI Studio）が設定されていれば Google Gemini の画像生成で着せ替え画像を作り、data URL で返す。
+ * GOOGLE_CLOUD_CREDENTIALS（Vertex AI のサービスアカウント鍵）・GOOGLE_CLOUD_API_KEY・GEMINI_API_KEY（AI Studio）の
+ * いずれかが設定されていれば Google Gemini の画像生成で着せ替え画像を作り、data URL で返す。
  * 未設定なら status: "mock" を返し、フロントは透過画像のレイヤー合成をそのまま表示する。
  */
 export async function POST(req: Request) {
   const body = (await req.json()) as TryOnRequest;
-  // Vertex AI（Google Cloud）のキーがあれば優先。無料トライアルのクレジットはこちらでしか使えない
+  // Google Cloud（Vertex AI）の設定を優先。無料トライアルの$300クレジットはこちらでしか使えない
+  const saJson = process.env.GOOGLE_CLOUD_CREDENTIALS;
   const vertexKey = process.env.GOOGLE_CLOUD_API_KEY;
-  const apiKey = vertexKey || process.env.GEMINI_API_KEY || process.env.TRYON_API_KEY;
+  const studioKey = process.env.GEMINI_API_KEY || process.env.TRYON_API_KEY;
+  const configured = Boolean(saJson || vertexKey || studioKey);
 
   if (!body.person_image_url || !Array.isArray(body.garments) || body.garments.length === 0) {
     return NextResponse.json({ status: "error", message: "全身写真とアイテムを選んでください。", image_url: null }, { status: 400 });
   }
 
-  if (!apiKey) {
+  if (!configured) {
     return NextResponse.json({
       status: "mock",
       image_url: null,
       message:
-        "AI試着はまだ設定されていないため、透過画像のレイヤー合成でプレビューしています。環境変数 GOOGLE_CLOUD_API_KEY（または GEMINI_API_KEY）を設定すると、シワや影まで自然に合成された画像に置き換わります。",
+        "AI試着はまだ設定されていないため、透過画像のレイヤー合成でプレビューしています。環境変数 GOOGLE_CLOUD_CREDENTIALS を設定すると、シワや影まで自然に合成された画像に置き換わります。",
     });
   }
 
@@ -57,9 +61,9 @@ export async function POST(req: Request) {
     const garments = await Promise.all(
       body.garments.slice(0, 6).map(async (g) => ({ category: g.category, image: await loadImage(g.image_url, origin) })),
     );
+    const target = await resolveTarget(saJson, vertexKey, studioKey);
     const result = await generateTryOnWithGemini({
-      apiKey,
-      backend: vertexKey ? "vertex" : "ai-studio",
+      target,
       model: process.env.TRYON_MODEL,
       person,
       garments,
@@ -75,6 +79,25 @@ export async function POST(req: Request) {
     if (!(e instanceof TryOnError)) console.error("[tryon]", e);
     return NextResponse.json({ status: "error", image_url: null, message }, { status });
   }
+}
+
+async function resolveTarget(saJson?: string, vertexKey?: string, studioKey?: string): Promise<GeminiTarget> {
+  if (saJson) {
+    let sa;
+    try {
+      sa = parseServiceAccount(saJson);
+      return {
+        kind: "vertex-sa",
+        projectId: process.env.GOOGLE_CLOUD_PROJECT || sa.project_id,
+        location: process.env.GOOGLE_CLOUD_LOCATION || "global",
+        accessToken: await getAccessToken(sa),
+      };
+    } catch (e) {
+      throw new TryOnError(e instanceof Error ? e.message : "Google Cloud の認証に失敗しました。");
+    }
+  }
+  if (vertexKey) return { kind: "vertex-key", apiKey: vertexKey };
+  return { kind: "ai-studio", apiKey: studioKey! };
 }
 
 /** data URL・アプリ内の画像（/mock/...）・Supabase Storage の画像を base64 にする。それ以外のURLは取りに行かない。 */
