@@ -1,20 +1,23 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { canvasToDataUrl, loadAndResize } from "@/lib/image";
+import { canvasToDataUrl } from "@/lib/image";
+import { ImageCropper, type CropAspect } from "@/components/ui/ImageCropper";
+
+const BODY_ASPECT: CropAspect[] = [{ id: "body", label: "1:2", ratio: 1 / 2 }];
 
 /** 全身写真のアップロード（縦長 1:2 の枠でプレビュー） */
 export function AvatarUploader({ value, onChange }: { value: string | null; onChange: (dataUrl: string) => Promise<void> }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
-  async function handle(file: File | undefined) {
-    if (!file) return;
+  async function save(canvas: HTMLCanvasElement) {
+    setCropFile(null);
     setBusy(true);
     setError(null);
     try {
-      const canvas = await loadAndResize(file, 1200);
       await onChange(canvasToDataUrl(canvas, false));
     } catch (e) {
       setError((e as Error).message);
@@ -31,7 +34,8 @@ export function AvatarUploader({ value, onChange }: { value: string | null; onCh
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
-          handle(e.dataTransfer.files[0]);
+          const f = e.dataTransfer.files[0];
+          if (f) setCropFile(f);
         }}
       >
         {value ? (
@@ -55,7 +59,28 @@ export function AvatarUploader({ value, onChange }: { value: string | null; onCh
           {busy ? "読み込み中…" : value ? "写真を変更" : "アップロード"}
         </div>
       </div>
-      <input ref={input} type="file" accept="image/*" className="hidden" onChange={(e) => handle(e.target.files?.[0])} />
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) setCropFile(f);
+        }}
+      />
+      {cropFile && (
+        <ImageCropper
+          file={cropFile}
+          aspects={BODY_ASPECT}
+          maxSize={1200}
+          guide="body"
+          title="全身写真の大きさを調整"
+          onCancel={() => setCropFile(null)}
+          onConfirm={save}
+        />
+      )}
       {error && <p className="mt-2 text-center text-xs text-red-700">{error}</p>}
       <ul className="mx-auto mt-4 max-w-[300px] space-y-1 text-xs text-ink/55">
         <li>・正面を向いて、頭からつま先まで入る縦長の写真</li>

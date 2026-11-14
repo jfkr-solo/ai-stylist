@@ -79,6 +79,15 @@ function trimTransparent(canvas: HTMLCanvasElement): HTMLCanvasElement {
   return out;
 }
 
+/** キャンバスを複製する（removeBackground は元のキャンバスを書き換えるため） */
+export function cloneCanvas(src: HTMLCanvasElement): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = src.width;
+  c.height = src.height;
+  c.getContext("2d")!.drawImage(src, 0, 0);
+  return c;
+}
+
 export function canvasToDataUrl(canvas: HTMLCanvasElement, transparent: boolean): string {
   if (transparent) {
     const webp = canvas.toDataURL("image/webp", 0.86);

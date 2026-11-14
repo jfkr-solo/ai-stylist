@@ -2,9 +2,16 @@
 
 import { useRef, useState } from "react";
 import { CATEGORIES, COLORS, SCENES, SEASONS, STYLE_TAGS, SUB_CATEGORIES } from "@/lib/constants";
-import { canvasToDataUrl, loadAndResize, removeBackground } from "@/lib/image";
+import { canvasToDataUrl, cloneCanvas, removeBackground } from "@/lib/image";
+import { ImageCropper, type CropAspect } from "@/components/ui/ImageCropper";
 import type { Category, Item, NewItem, Season } from "@/types/database";
 import { TagInput } from "./TagInput";
+
+const ITEM_ASPECTS: CropAspect[] = [
+  { id: "original", label: "元の比率", ratio: null },
+  { id: "square", label: "正方形", ratio: 1 },
+  { id: "portrait", label: "縦長 3:4", ratio: 3 / 4 },
+];
 
 const EMPTY: NewItem = {
   name: "",
@@ -34,6 +41,8 @@ export function ItemForm({
   const [preview, setPreview] = useState<string | null>(initial?.image_url ?? null);
   const [pending, setPending] = useState<string | null>(null); // 未アップロードの data URL
   const [rawFile, setRawFile] = useState<File | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null); // 調整画面を開いている写真
+  const cropped = useRef<HTMLCanvasElement | null>(null); // 大きさ調整後・背景透過前の画像
   const [cutout, setCutout] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,11 +50,13 @@ export function ItemForm({
 
   const set = <K extends keyof NewItem>(k: K, v: NewItem[K]) => setForm((f) => ({ ...f, [k]: v }));
 
-  async function process(file: File, doCutout: boolean) {
+  async function process(source: HTMLCanvasElement, doCutout: boolean) {
     setBusy(true);
     setError(null);
+    // 「処理中…」を先に描画してから重い背景透過を行う
+    await new Promise((r) => setTimeout(r, 30));
     try {
-      let canvas = await loadAndResize(file, 800);
+      let canvas = cloneCanvas(source);
       if (doCutout) canvas = removeBackground(canvas);
       const url = canvasToDataUrl(canvas, true);
       setPreview(url);
@@ -78,10 +89,11 @@ export function ItemForm({
     <div className="space-y-5">
       {/* 写真 */}
       <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
+        <div className="space-y-2">
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="checker relative grid aspect-square place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-black/10 p-3"
+          className="checker w-full relative grid aspect-square place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-black/10 p-3"
         >
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -93,6 +105,12 @@ export function ItemForm({
           )}
           {busy && <span className="absolute inset-0 grid place-items-center bg-white/70 text-xs font-semibold">処理中…</span>}
         </button>
+        {rawFile && (
+          <button type="button" className="btn-ghost w-full !py-2 text-xs" disabled={busy} onClick={() => setCropFile(rawFile)}>
+            ⤢ 大きさ・位置を調整
+          </button>
+        )}
+        </div>
         <input
           ref={fileRef}
           type="file"
@@ -101,12 +119,25 @@ export function ItemForm({
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
-            if (f) {
-              setRawFile(f);
-              process(f, cutout);
-            }
+            e.target.value = ""; // 同じ写真を選び直しても反応するように
+            if (f) setCropFile(f);
           }}
         />
+        {cropFile && (
+          <ImageCropper
+            file={cropFile}
+            aspects={ITEM_ASPECTS}
+            maxSize={800}
+            title="写真の大きさを調整"
+            onCancel={() => setCropFile(null)}
+            onConfirm={(canvas) => {
+              setRawFile(cropFile);
+              setCropFile(null);
+              cropped.current = canvas;
+              process(canvas, cutout);
+            }}
+          />
+        )}
         <div className="space-y-3">
           <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-white p-3 text-xs">
             <input
@@ -115,7 +146,7 @@ export function ItemForm({
               checked={cutout}
               onChange={(e) => {
                 setCutout(e.target.checked);
-                if (rawFile) process(rawFile, e.target.checked);
+                if (cropped.current) process(cropped.current, e.target.checked);
               }}
             />
             <span>
